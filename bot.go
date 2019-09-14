@@ -15,11 +15,12 @@ import (
 )
 
 var (
-	// глобальная переменная в которой храним токен
+	// переменная с токеном
 	telegramBotToken string
+	// имя файла с настройками
 	settingsfile string = "settings.json"
-	settingsmap map[string]interface{} //карта, в которую считываеются все настройки
-
+	//карта, в которую считываеются все настройки из файла
+	settingsmap map[string]interface{}
 )
 
 func init() {
@@ -35,7 +36,8 @@ func init() {
 }
 
 func main() {
-	settinsreading()
+	settinsreading() //читаем настройки
+
 	// используя токен создаем новый инстанс бота
 	bot, err := tgbotapi.NewBotAPI(telegramBotToken)
 	if err != nil {
@@ -54,27 +56,28 @@ func main() {
 		readingmessage_func(update, bot)
 	}
 }
-
+//функци чтения настроек
 func settinsreading(){
-	data, err := ioutil.ReadFile(settingsfile)
+	data, err := ioutil.ReadFile(settingsfile) //читаем файл settingsfile
 	if err != nil {
 		fmt.Print(err)
 	}
-	if err := json.Unmarshal(data, &settingsmap); err != nil {
+	if err := json.Unmarshal(data, &settingsmap); err != nil { //запихиваем его в settingsmap
 		log.Println(err)
 	}
 
-	fmt.Println(settingsmap)
-	allowedids := settingsmap["allowedids"].([]interface{})
-	fmt.Printf("%s\n", "Allowed IDs:")
+	//fmt.Println(settingsmap)
+	allowedids := settingsmap["allowedids"].([]interface{}) //получаем массив с разрешенным ID пользователей
+	fmt.Printf("%s\n", "Allowed IDs:") //и выводим их
 	for k , id := range allowedids{
 		fmt.Printf("%d: %s\n", k, id)
 	}
 }
+//функция чтения сообщения в чате
+func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) { 
 
-func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
+	var reply string //переменная с текстом ответа
 
-	var reply string
 	// логируем от кого какое сообщение пришло
 	log.Printf("[%s:%s] %s", update.Message.From.UserName, strconv.Itoa(update.Message.From.ID), update.Message.Text)
 	// свитч на обработку комманд
@@ -86,19 +89,19 @@ func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		bot.Send(msg)
 	}
 
-	allowedids := settingsmap["allowedids"].([]interface{}) //.([]interface{}
-	allowed := false
+	allowedids := settingsmap["allowedids"].([]interface{}) //помещаем список разрешенных ID в массив
+	allowed := false //флаг, указывающий на то, разрешен ID или нет
 
-	for _ , id := range allowedids {
+	for _ , id := range allowedids { //перебираем массив с ID и определяем, если ли user в списке разрешенных ID
 		chatidstr := strconv.FormatInt(update.Message.Chat.ID,10)
 		//fmt.Println(chatidstr)
 		if chatidstr == id{
-			allowed = true
+			allowed = true //если нашли ID в списке, ставим флаг
 			fmt.Printf("%s разрешен\n", id)
 		}
 	}
 
-	if allowed{ //если id в списке разрешенных, выполняем код:
+	if allowed{ //если ID пользователя в списке разрешенных, выполняем код:
 		regexp_result := regexp_func(update.Message.Text)
 		reply = "Результат от регулярки " + settingsmap["userregexp"].(string) + ": " + regexp_result
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
@@ -106,33 +109,33 @@ func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 		usercommand_func(regexp_result)
 
-	} else { //если id не нашелся в списке разрешенных, выполняем это:
+	} else { //если ID не нашелся в списке разрешенных, выполняем это:
 		reply = "Мы не знакомы :("
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		bot.Send(msg)
 	}
 }
-
+//функция обработки регулярного выражения (сама регулярка берется из файла с настройками)
 func regexp_func(inputtext string) string{
 	userregexp := settingsmap["userregexp"].(string)
-	r, _ := regexp.Compile(userregexp)
+	r, _ := regexp.Compile(userregexp) 
 	match := r.FindAllString(inputtext, -1)
-	output := strings.Join(match, "")
+	output := strings.Join(match, "")//склейка всех результатов regexp
 	if output == ""{
 		output = "null"
 	}
-	return output
+	return output //возвращаем результат работы функции
 }
-
+//выполнение пользовательской функции на локальной машине
 func usercommand_func(inputtext string) {
 
-	commandstr := strings.Replace(settingsmap["usercommand"].(string),"<arg>", inputtext, -1)
-	cmd := exec.Command("/bin/bash", "-c", commandstr)
-	stdout, err := cmd.Output()
+	commandstr := strings.Replace(settingsmap["usercommand"].(string),"<arg>", inputtext, -1) //заменяем текст <arg> на результат нашего регулярного выражения
+	cmd := exec.Command("/bin/bash", "-c", commandstr) //формируем команду для выполнения
+	stdout, err := cmd.Output() //выполняем команду
 	if err != nil {
 		println(err.Error())
 		return
 	}
 
-	fmt.Printf("%s",stdout)
+	fmt.Printf("%s",stdout) //вывод stdout в консоль
 }
