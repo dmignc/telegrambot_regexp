@@ -18,7 +18,6 @@ var (
 	// глобальная переменная в которой храним токен
 	telegramBotToken string
 	settingsfile string = "settings.json"
-	//settingsmap map[string]interface{} //карта, в которую считываеются все настройки
 	settingsmap map[string]interface{} //карта, в которую считываеются все настройки
 
 )
@@ -57,14 +56,11 @@ func main() {
 }
 
 func settinsreading(){
-	//r1, _ := regexp.Compile("(^.*)=")
-	// read file
 	data, err := ioutil.ReadFile(settingsfile)
 	if err != nil {
 		fmt.Print(err)
 	}
 	if err := json.Unmarshal(data, &settingsmap); err != nil {
-		//panic(err)
 		log.Println(err)
 	}
 
@@ -78,13 +74,7 @@ func settinsreading(){
 
 func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
-	// универсальный ответ на любое сообщение
 	var reply string
-	//	if update.Message == nil {
-	//		return
-	//	}
-
-	//regexp_func(update.Message.Text)
 	// логируем от кого какое сообщение пришло
 	log.Printf("[%s:%s] %s", update.Message.From.UserName, strconv.Itoa(update.Message.From.ID), update.Message.Text)
 	// свитч на обработку комманд
@@ -94,8 +84,6 @@ func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		reply = "Привет. Я телеграм-бот"
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		bot.Send(msg)
-		//	case "hello":
-		//		reply = "world"
 	}
 
 	allowedids := settingsmap["allowedids"].([]interface{}) //.([]interface{}
@@ -110,11 +98,7 @@ func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 		}
 	}
 
-	//fmt.Println(allowed, update.Message.Chat.ID)
 	if allowed{ //если id в списке разрешенных, выполняем код:
-
-		//reply = "О, я тебя знаю!"
-		//usermsg[] string := update.Message.Text
 		regexp_result := regexp_func(update.Message.Text)
 		reply = "Результат от регулярки " + settingsmap["userregexp"].(string) + ": " + regexp_result
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
@@ -122,10 +106,7 @@ func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 
 		usercommand_func(regexp_result)
 
-
-
 	} else { //если id не нашелся в списке разрешенных, выполняем это:
-		//fmt.Println("В настройках нет такого ID")
 		reply = "Мы не знакомы :("
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, reply)
 		bot.Send(msg)
@@ -133,9 +114,6 @@ func readingmessage_func(update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 }
 
 func regexp_func(inputtext string) string{
-	//var pattern string
-	//var text string
-	//text := inputtext
 	userregexp := settingsmap["userregexp"].(string)
 	r, _ := regexp.Compile(userregexp)
 	match := r.FindAllString(inputtext, -1)
@@ -156,6 +134,5 @@ func usercommand_func(inputtext string) {
 		return
 	}
 
-	//s := string([]byte(stdout))
 	fmt.Printf("%s",stdout)
 }
