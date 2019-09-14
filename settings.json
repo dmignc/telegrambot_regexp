@@ -1,0 +1,9 @@
+{
+  "allowedids": [
+    "78785422",
+    "0"
+  ],
+  "serveraddress": "www.server.ru",
+  "usercommand": "echo <arg> >> tempfile",
+  "userregexp": "[0-9]"
+}
